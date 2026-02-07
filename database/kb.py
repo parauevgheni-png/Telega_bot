@@ -1,6 +1,10 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 main_kb = ReplyKeyboardMarkup(
+
+#Import libreries
+
+
     keyboard=[
         [
             KeyboardButton(text="Меню"),
@@ -11,6 +15,9 @@ main_kb = ReplyKeyboardMarkup(
     resize_keyboard=True,
     one_time_keyboard=False
 )
+
+
+#keyboard
 
 menu_kbjj = ReplyKeyboardMarkup(
     keyboard=[
@@ -25,6 +32,10 @@ menu_kbjj = ReplyKeyboardMarkup(
     resize_keyboard=True,
     one_time_keyboard=False
 )
+
+
+#keyboard buttons
+
 
 contacts_kb = ReplyKeyboardMarkup(
     keyboard=[
@@ -41,6 +52,10 @@ contacts_kb = ReplyKeyboardMarkup(
     one_time_keyboard=False
 )
 
+
+#adress
+
+
 order_kb = ReplyKeyboardMarkup(
     keyboard=[
         [
@@ -54,6 +69,10 @@ order_kb = ReplyKeyboardMarkup(
     one_time_keyboard=False
 )
 
+
+#order/to don't
+
+
 cart_kb = ReplyKeyboardMarkup(
     keyboard=[
         [
@@ -66,6 +85,10 @@ cart_kb = ReplyKeyboardMarkup(
     resize_keyboard=True,
     one_time_keyboard=False
 )
+
+
+#trashcane
+
 
 cart_order_kb = ReplyKeyboardMarkup(
     keyboard=[
@@ -82,6 +105,9 @@ cart_order_kb = ReplyKeyboardMarkup(
 )
 
 
+#trashcane/order
+
+
 main_kb2 = InlineKeyboardMarkup(
     inline_keyboard=[
         [
@@ -92,6 +118,10 @@ main_kb2 = InlineKeyboardMarkup(
     ]
 )
 
+
+#inline_keyboard menu
+
+
 admin_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [
@@ -101,3 +131,6 @@ admin_kb = InlineKeyboardMarkup(
         ]
     ]
 )
+
+#inline_keyboard changes
+
