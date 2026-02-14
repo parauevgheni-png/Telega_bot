@@ -1,52 +1,43 @@
 import sqlite3
 
-#import sql
+def init_db():
+    conn = sqlite3.connect("films.db")
+    cur = conn.cursor()
 
-conn_f = sqlite3.connect("food.db")
-cursor_f = conn_f.cursor()
+#database
 
-#add food
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS films (
+            title TEXT,
+            year INTEGER
+        )
+    """)
 
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS submissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            comment TEXT,
+            films TEXT
+        )
+    """)
 
-cursor_f.executescript(
-    '''
-    CREATE TABLE IF NOT EXISTS food (
-        name TEXT,
-        price INT
-    );
-''')
-conn_f.commit()
-conn_f.close()
-
-#table food
-
-
-def food_insert(name, price):
-    conn_f = sqlite3.connect("food.db")
-    cursor_f = conn_f.cursor()
-    cursor_f.execute("INSERT INTO food(name, price) VALUES (?, ?)", (name, price))
-    conn_f.commit()
-    conn_f.close()
+    conn.commit()
+    conn.close()
 
 
-#food name
-
-def food_del(namee):
-    conn_f = sqlite3.connect("food.db")
-    cursor_f = conn_f.cursor()
-    cursor_f.execute("DELETE FROM food WHERE name = ?" , (namee,))
-    conn_f.commit()
-    conn_f.close()
-
-#delete food
+def get_films():
+    conn = sqlite3.connect("films.db")
+    cur = conn.cursor()
+    cur.execute("SELECT title, year FROM films")
+    data = cur.fetchall()
+    conn.close()
+    return data
 
 
-def food_change(prod_name, name, price):
-    conn_f = sqlite3.connect("food.db")
-    cursor_f = conn_f.cursor()
-    cursor_f.execute("UPDATE food SET name = ?, price = ? WHERE name = ?", (name, price, prod_name))
-    conn_f.commit()
-    conn_f.close()    
-
-
-#price
+def add_film(title, year):
+    conn = sqlite3.connect("films.db")
+    cur = conn.cursor()
+    cur.execute("INSERT INTO films VALUES (?, ?)", (title, year))
+    conn.commit()
+    conn.close()

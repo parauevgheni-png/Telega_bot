@@ -1,136 +1,48 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+
 main_kb = ReplyKeyboardMarkup(
-
-#Import libreries
-
-
     keyboard=[
-        [
-            KeyboardButton(text="Меню"),
-            KeyboardButton(text="О нас"),
-            KeyboardButton(text="Контакты"),
-        ],
+        [KeyboardButton(text="Menu")],
+        [KeyboardButton(text="Favorite")],
+        [KeyboardButton(text="Send")]
     ],
     resize_keyboard=True,
     one_time_keyboard=False
 )
 
+# ===================== FAVORITE KEYBOARD =====================
 
-#keyboard
-
-menu_kbjj = ReplyKeyboardMarkup(
+fav_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [
-            KeyboardButton(text="Главное меню"),
-            KeyboardButton(text="Далее")
-        ],
-        [
-            KeyboardButton(text="Назад")
-        ]
+        [KeyboardButton(text="Favorite")],
+        [KeyboardButton(text="Menu")],
+        [KeyboardButton(text="Send")]
     ],
     resize_keyboard=True,
     one_time_keyboard=False
 )
 
+# ===================== SEND KEYBOARD =====================
 
-#keyboard buttons
-
-
-contacts_kb = ReplyKeyboardMarkup(
+send_kb = ReplyKeyboardMarkup(
     keyboard=[
-        [
-            KeyboardButton(text="Номер телефона"),
-            KeyboardButton(text="Адрес")
-        ],
-        [
-            KeyboardButton(text="Главное меню"),
-            KeyboardButton(text="Назад")
-        ]
+        [KeyboardButton(text="Send")],
+        [KeyboardButton(text="Menu")]
     ],
     resize_keyboard=True,
     one_time_keyboard=False
 )
 
-
-#adress
-
-
-order_kb = ReplyKeyboardMarkup(
-    keyboard=[
-        [
-            KeyboardButton(text="Заказать")
-        ],
-        [
-            KeyboardButton(text="Назад")
-        ]
-    ],
-    resize_keyboard=True,
-    one_time_keyboard=False
-)
-
-
-#order/to don't
-
-
-cart_kb = ReplyKeyboardMarkup(
-    keyboard=[
-        [
-            KeyboardButton(text="Корзина")
-        ],
-        [
-            KeyboardButton(text="Назад")
-        ]
-    ],
-    resize_keyboard=True,
-    one_time_keyboard=False
-)
-
-
-#trashcane
-
-
-cart_order_kb = ReplyKeyboardMarkup(
-    keyboard=[
-        [
-            KeyboardButton(text="Корзина"),
-            KeyboardButton(text="Заказать")
-        ],
-        [
-            KeyboardButton(text="Назад")
-        ]
-    ],
-    resize_keyboard=True,
-    one_time_keyboard=False
-)
-
-
-#trashcane/order
-
-
-main_kb2 = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [
-            InlineKeyboardButton(text="Меню", callback_data="menu"),
-            InlineKeyboardButton(text="О нас", callback_data="about"),
-            InlineKeyboardButton(text="Контакты", callback_data="contacts")
-        ]
-    ]
-)
-
-
-#inline_keyboard menu
-
+# ===================== ADMIN INLINE KEYBOARD =====================
 
 admin_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [
-            InlineKeyboardButton(text="Добавить", callback_data="add"),
-            InlineKeyboardButton(text="Удалить", callback_data="del"),
-            InlineKeyboardButton(text="Изменить", callback_data="change")
+            InlineKeyboardButton(
+                text="➕ Add film",
+                callback_data="add_film"
+            )
         ]
     ]
 )
-
-#inline_keyboard changes
-

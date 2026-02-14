@@ -1,243 +1,202 @@
-from aiogram.enums import ParseMode
-from aiogram.client.default import DefaultBotProperties
-from aiogram import Bot, Dispatcher
-from aiogram.types import Message, CallbackQuery
-from aiogram.filters import Command
-from aiogram import F
 import asyncio
 import sqlite3
-from kb import (
-    main_kb, admin_kb, order_kb, cart_kb, 
-    cart_order_kb, menu_kbjj, contacts_kb
+
+from aiogram import Bot, Dispatcher, F
+from aiogram.enums import ParseMode
+from aiogram.client.default import DefaultBotProperties
+from aiogram.types import (
+    Message,
+    CallbackQuery,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton
 )
-from aiogram.fsm.state import State, StatesGroup
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from database.db2 import food_insert, food_del, food_change
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.fsm.state import State, StatesGroup
 
-#Importa neccesary biblaties
+from kb import main_kb, admin_kb, fav_kb, send_kb
+from db2 import init_db, get_films, add_film
 
 
+
+BOT_TOKEN = "8298563896:AAGmnGmm1CSbRGxCU-rofLiUsFP9waYUC0c"
+
+
+ADMIN_ID = 123456789
 
 bot = Bot(
-    token='8298563896:AAGq8Kqfl-6n4gSq3Q2t8GFM40ik_x8oV58',
+    token=BOT_TOKEN,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
 )
 dp = Dispatcher()
 
-#Import our bot
 
-class add_product(StatesGroup):
+
+
+class FavoriteFSM(StatesGroup):
+    choosing = State()
+
+
+class SubmitFSM(StatesGroup):
     name = State()
-    price = State()
+    comment = State()
 
-class del_prod(StatesGroup):
-    namee = State()
 
-class change_prod(StatesGroup):
-    prod_name = State()
-    name = State()
-    price = State()
+class AddFilmFSM(StatesGroup):
+    title = State()
+    year = State()
 
-class OrderFSM(StatesGroup):
-    name = State()
-    address = State()
-    final = State()
-
-#Import spetial tasks(classes)
 
 
 @dp.message(Command("start"))
-async def start_com(message: Message):
-    await message.answer("Привет, это бот для заказа еды", reply_markup=main_kb)
+async def start_cmd(message: Message):
+    await message.answer(
+        "🎬 Welcome to the films bot!",
+        reply_markup=main_kb
+    )
 
-#command start
 
 
+@dp.message(F.text == "Menu")
+async def show_films(message: Message):
+    films = get_films()
 
-@dp.message(F.text == "Меню")
-async def show_menu(message: Message):
-    await message.answer("\U0001F37D️ Вот ваше меню:", reply_markup=cart_order_kb)
-
-    conn_f = sqlite3.connect("food.db")
-    cursor_f = conn_f.cursor()
-    cursor_f.execute("SELECT name, price FROM food")
-    result = cursor_f.fetchall()
-    conn_f.close()
-
-    if not result:
-        await message.answer("Меню пока пустое \U0001FAE4")
+    if not films:
+        await message.answer("We add your favorite movies. /start for start; /menu for menu; /send for sending favorite film")
         return
 
-    for item in result:
-        nameq, priceq = item
-        text = f"*{nameq}*\nЦена: *{priceq}* лей."
-
-        product_kb = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(text="Добавить в корзину", callback_data=f"add:{nameq}")]
-            ]
-        )
-        await message.answer(text, parse_mode="Markdown", reply_markup=product_kb)
+    for title, year in films:
+        await message.answer(f"<b>{title}</b> ({year})")
 
 
-#Main menu
+
+@dp.message(F.text == "Favorite")
+async def favorite_start(message: Message, state: FSMContext):
+    films = get_films()
+
+    if not films:
+        await message.answer("The most favorite films of all humanity are here: https://m.imdb.com/chart/top/")
+        return
+
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=title, callback_data=title)]
+            for title, _ in films
+        ] + [
+            [InlineKeyboardButton(text=" Finish", callback_data="finish")]
+        ]
+    )
+
+    await state.set_state(FavoriteFSM.choosing)
+    await message.answer("Choose your favorite films:", reply_markup=kb)
 
 
-@dp.callback_query(F.data.startswith("add:"))
-async def add_to_cart(callback: CallbackQuery, state: FSMContext):
-    food_name = callback.data.split("add:")[1]
+@dp.callback_query(FavoriteFSM.choosing)
+async def favorite_choose(call: CallbackQuery, state: FSMContext):
+    if call.data == "finish":
+        favs = (await state.get_data()).get("favs", [])
+
+        if not favs:
+            await call.message.answer("You didn't choose any films.", reply_markup=main_kb)
+        else:
+            text = "<b>Your favorites:</b>\n" + "\n".join(f"• {f}" for f in favs)
+            await call.message.answer(text, reply_markup=send_kb)
+
+        await state.clear()
+        await call.answer()
+        return
+
     data = await state.get_data()
-    cart = data.get("cart", [])
-    cart.append(food_name)
-    await state.update_data(cart=cart)
-    await callback.answer(f"{food_name} добавлено в корзину ✅")
+    favs = data.get("favs", [])
 
-#Add to trach cane
-
-
-@dp.message(F.text == "Корзина")
-async def show_cart(message: Message, state: FSMContext):
-    data = await state.get_data()
-    cart = data.get("cart", [])
-    if not cart:
-        await message.answer("Ваша корзина пуста \U0001F9FA", reply_markup=cart_kb)
+    if call.data not in favs:
+        favs.append(call.data)
+        await state.update_data(favs=favs)
+        await call.answer("Added to favorites!")
     else:
-        text = "\U0001F6D2 Ваша корзина:\n" + "\n".join(f"• {item}" for item in cart)
-        await message.answer(text, reply_markup=order_kb)
-
-#Command to thash cane
+        await call.answer("Already added")
 
 
-@dp.message(F.text == "Заказать")
-async def start_order(message: Message, state: FSMContext):
-    await message.answer("Введите ваше имя:")
-    await state.set_state(OrderFSM.name)
-
-#Command to order
+@dp.message(F.text == "Send")
+async def submit_start(message: Message, state: FSMContext):
+    await message.answer("Your name?")
+    await state.set_state(SubmitFSM.name)
 
 
-@dp.message(OrderFSM.name)
-async def get_name(message: Message, state: FSMContext):
+@dp.message(SubmitFSM.name)
+async def submit_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
-    await message.answer("Введите адрес доставки:")
-    await state.set_state(OrderFSM.address)
-
-#Adress order
+    await message.answer("What is your favorite film?")
+    await state.set_state(SubmitFSM.comment)
 
 
-@dp.message(OrderFSM.address)
-async def get_address(message: Message, state: FSMContext):
-    await state.update_data(address=message.text)
+@dp.message(SubmitFSM.comment)
+async def submit_finish(message: Message, state: FSMContext):
     data = await state.get_data()
-    name = data.get("name")
-    address = data.get("address")
-    cart = data.get("cart", [])
 
-    conn = sqlite3.connect("orders.db")
-    cursor = conn.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, address TEXT, items TEXT)")
-    cursor.execute("INSERT INTO orders (name, address, items) VALUES (?, ?, ?)", (name, address, ", ".join(cart)))
+    conn = sqlite3.connect("films.db")
+    cur = conn.cursor()
+
+    cur.execute(
+        "INSERT INTO submissions (name, comment, films) VALUES (?, ?, ?)",
+        (
+            data["name"],
+            message.text,
+            ", ".join(data.get("favs", []))
+        )
+    )
+
     conn.commit()
     conn.close()
 
-    await message.answer("Ваш заказ оформлен и отправлен в доставку! \U0001F680", reply_markup=main_kb)
+    await message.answer("Thank you for your feedback!", reply_markup=main_kb)
     await state.clear()
 
-#Name, adress and other
 
-
-@dp.message(F.text == "О нас")
-async def ec(message: Message):
-    await message.answer("Тут о нас)", reply_markup=menu_kbjj)
-
-@dp.message(F.text == "Контакты")
-async def e(message: Message):
-    await message.answer("Наш номер телефона: +373 600 00 00", reply_markup=contacts_kb)
-
-@dp.message(F.text == "Назад")
-@dp.message(F.text == "Главное меню")
-async def back_to_main(message: Message):
-    await message.answer("Вы вернулись в главное меню", reply_markup=main_kb)
 
 @dp.message(Command("admin"))
-async def admin_handler(message: Message):
-    await message.answer("Введи паоль: ")
+async def admin_cmd(message: Message):
+    if message.from_user.id != ADMIN_ID:
+        return
 
-@dp.message(F.text == "13211")
-async def admin_handler(message: Message):
-    await message.answer("Ты в админке", reply_markup=admin_kb)
-
-@dp.callback_query(F.data == "add")
-async def add_name(message: CallbackQuery, state: FSMContext):
-    await message.message.answer("Привет! Чтобы добваить новый продукт напиши тут название: ")
-    await state.set_state(add_product.name)
+    await message.answer("Admin panel", reply_markup=admin_kb)
 
 
-#Some administrative shit
+@dp.callback_query(F.data == "add_film")
+async def admin_add_film(call: CallbackQuery, state: FSMContext):
+    if call.from_user.id != ADMIN_ID:
+        return
+
+    await call.message.answer("Film title?")
+    await state.set_state(AddFilmFSM.title)
+    await call.answer()
+
+@dp.message(AddFilmFSM.title)
+async def admin_film_title(message: Message, state: FSMContext):
+    await state.update_data(title=message.text)
+    await message.answer("Release year?")
+    await state.set_state(AddFilmFSM.year)
 
 
-@dp.message(add_product.name)
-async def add_price(message: Message, state: FSMContext):
-    await message.answer("Мне ещё нужна цена этого продукта: ")
-    await state.update_data(name=message.text)
-    await state.set_state(add_product.price)
+@dp.message(AddFilmFSM.year)
+async def admin_film_year(message: Message, state: FSMContext):
+    try:
+        year = int(message.text)
+    except ValueError:
+        await message.answer("Enter a valid year (number).")
+        return
 
-@dp.message(add_product.price)
-async def all_data(message: Message, state: FSMContext):
-    await state.update_data(price=message.text)
     data = await state.get_data()
-    food_insert(data["name"], data["price"])
-    await message.answer("Данные сохраненны в базе данных")
+    add_film(data["title"], year)
 
-@dp.callback_query(F.data == "change")
-async def change_by_name(message: CallbackQuery, state: FSMContext):
-    await state.set_state(change_prod.prod_name)
-    await message.message.answer("Напишите имя продукта который вы хотите изменить")
-
-@dp.message(change_prod.prod_name)
-async def change_name(message: Message, state: FSMContext):
-    await state.update_data(prod_name=message.text)
-    await message.answer("Напишите новое имя для данного продукта")
-    await state.set_state(change_prod.name)
-
-@dp.message(change_prod.name)
-async def change_price(message: Message, state: FSMContext):
-    await state.update_data(name=message.text)
-    await message.answer("Введи новую цену")
-    await state.set_state(change_prod.price)
-
-@dp.message(change_prod.price)
-async def get_a_data(message: Message, state: FSMContext):
-    await state.update_data(price=message.text)
-    data = await state.get_data()
-    food_change(data["prod_name"], data["name"], data["price"])
-    await message.answer("Данные изменены")
-
-@dp.callback_query(F.data == "del")
-async def pred_del(message: CallbackQuery, state: FSMContext):
-    await message.message.answer("Напишите имя продукта который вы хотите удалить")
-    await state.set_state(del_prod.namee)
-
-@dp.message(del_prod.namee)
-async def dell(message: Message, state: FSMContext):
-    await state.update_data(namee=message.text)
-    name = await state.get_data()
-    food_del(name["namee"])
-    await message.answer("Удалили успешно")
-
-
-#product
-
+    await message.answer("Film added successfully!", reply_markup=main_kb)
+    await state.clear()
 
 
 async def main():
+    init_db()
     await dp.start_polling(bot)
 
-#bot function
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
-#end of the code
